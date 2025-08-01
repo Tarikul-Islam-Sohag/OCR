@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR HYDRA - Functional</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- PDF & DOCX Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html-to-docx@1.8.0/dist/html-to-docx.js"></script>
+
+
+    <style>
+        /* Custom styles for the futuristic theme */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a102c; /* Fallback background */
+            background: radial-gradient(ellipse at bottom, #3c1e69 0%, #11091f 70%);
+        }
+
+        /* Main container with gradient */
+        .main-panel {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Simple white panels */
+        .content-panel {
+            background-color: rgb(255 255 255 / 0.95);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Updated button style with gradient */
+        .action-button {
+            background-image: linear-gradient(to right, #8b5cf6, #7c3aed);
+            color: white;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            padding: 0.65rem 1rem;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.2);
+            border: none;
+        }
+        .action-button:hover {
+            background-image: linear-gradient(to right, #9d6bff, #8b5cf6);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(124, 58, 237, 0.5);
+        }
+        .action-button:disabled {
+            background-image: linear-gradient(to right, #a7a7a7, #8f8f8f);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* To hide the default file input */
+        #file-upload {
+            display: none;
+        }
+        
+        /* Export Modal Styles */
+        .modal-backdrop {
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+        }
+        
+        /* Custom scrollbar for textareas */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: rgba(168, 85, 247, 0.4);
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: rgba(192, 132, 252, 0.6);
+        }
+
+        /* Circular Progress Bar Styles */
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Main Panel -->
+    <div class="main-panel w-full max-w-6xl rounded-3xl p-6 sm:p-8 flex flex-col relative">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h1 class="text-4xl font-bold text-white tracking-wider">OCR <span style="color: #a78bfa;">HYDRA</span></h1>
+            <p class="text-gray-300 mt-1">A powerful AI-based OCR solution</p>
+        </div>
+        
+        <!-- Undo/Redo Icons -->
+        <div class="absolute top-8 right-8 flex items-center space-x-2">
+            <button id="undo-btn" class="p-1.5 rounded-full hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="Undo">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <button id="redo-btn" class="p-1.5 rounded-full hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="Redo">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+            </button>
+        </div>
+
+        <!-- Content Area -->
+        <div class="flex-grow grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Left Column -->
+            <div class="md:col-span-1 flex flex-col gap-4">
+                <div id="upload-panel" class="content-panel rounded-2xl p-2 flex-grow flex flex-col items-center justify-center border-2 border-dashed border-gray-300 hover:border-purple-400 transition-colors duration-300 cursor-pointer min-h-[300px] relative overflow-hidden">
+                    <input type="file" id="file-upload" accept="image/*,application/pdf">
+                    
+                    <div id="upload-text-container" class="text-center p-2">
+                         <p class="mt-2 text-lg font-semibold text-gray-700">Drag and Drop</p>
+                         <p class="text-md text-gray-500">Or <span class="text-purple-600 font-semibold">Upload</span></p>
+                         <button id="camera-btn" class="mt-4 p-2 rounded-full hover:bg-gray-200 transition-colors" title="Use Camera">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                         </button>
+                    </div>
+                    
+                    <img id="image-preview" src="" alt="Image Preview" class="hidden absolute top-0 left-0 w-full h-full object-contain p-2">
+                    <canvas id="pdf-preview" class="hidden absolute top-0 left-0 w-full h-full"></canvas>
+                </div>
+                <button id="extract-btn" class="action-button w-full">Extract</button>
+            </div>
+
+            <!-- Right Column -->
+            <div class="md:col-span-2 flex flex-col gap-4">
+                 <div class="content-panel rounded-2xl flex-grow flex flex-col relative">
+                    <textarea id="ocr-text-area" class="w-full h-full min-h-[250px] bg-transparent text-gray-800 p-4 text-base rounded-2xl focus:outline-none resize-none" placeholder="Upload an image or PDF and click Extract..."></textarea>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="relative">
+                        <button id="ai-tools-btn" class="action-button w-full flex items-center justify-center">
+                            ✨ AI Tools
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="ai-tools-dropdown" class="absolute bottom-full mb-2 w-full bg-white rounded-lg shadow-lg hidden z-10 border border-gray-200">
+                            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-purple-100" data-action="cleanup">AI Cleanup</a>
+                            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-purple-100" data-action="summarize">Summarize</a>
+                            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-purple-100" data-action="translate">Translate</a>
+                        </div>
+                    </div>
+                    <button id="export-btn" class="action-button">Export</button>
+                    <button id="copy-btn" class="action-button">Copy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Instructions Panel -->
+    <div class="main-panel w-full max-w-6xl rounded-3xl p-4 mt-6">
+        <label for="ai-prompt-area" class="text-lg font-semibold text-white mb-2 block">AI Instructions</label>
+        <div class="relative">
+            <textarea id="ai-prompt-area" class="w-full bg-white/10 text-white p-3 pr-24 text-base rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none border border-white/20" rows="3" placeholder="e.g., 'Summarize into bullet points' or 'Translate to Spanish'"></textarea>
+            <button id="ai-prompt-enter-btn" class="action-button absolute bottom-3 right-3 text-sm px-4 py-2" title="Submit instructions and start extraction">Enter</button>
+        </div>
+    </div>
+    
+    <!-- Loading Bar -->
+    <div id="loading-bar" class="fixed bottom-0 left-0 w-full bg-black/50 backdrop-blur-sm p-3 flex items-center justify-center hidden z-50">
+        <div class="flex items-center gap-4">
+            <div class="relative w-16 h-16">
+                 <svg class="w-16 h-16" id="progress-ring">
+                    <circle class="text-white/20" stroke-width="6" stroke="currentColor" fill="transparent" r="26" cx="32" cy="32"/>
+                    <circle class="progress-ring__circle text-purple-400" stroke-width="6" stroke="currentColor" fill="transparent" r="26" cx="32" cy="32"/>
+                </svg>
+                <div id="loading-percentage" class="absolute inset-0 flex items-center justify-center text-white text-sm font-bold">0%</div>
+            </div>
+            <p id="loading-text" class="text-white text-lg"></p>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="export-modal" class="fixed inset-0 modal-backdrop w-full h-full flex items-center justify-center hidden">
+        <div class="main-panel rounded-2xl p-8 w-full max-w-sm text-center">
+            <h3 class="text-2xl font-bold text-white mb-6">Export As</h3>
+            <div class="flex flex-col gap-4">
+                <button id="export-pdf-btn" class="action-button">Export as PDF</button>
+                <button id="export-doc-btn" class="action-button">Export as DOC</button>
+            </div>
+            <button id="close-modal-btn" class="mt-6 text-gray-300 hover:text-white">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Camera Modal -->
+    <div id="camera-modal" class="fixed inset-0 modal-backdrop w-full h-full flex items-center justify-center hidden">
+        <div class="main-panel rounded-2xl p-4 w-full max-w-2xl text-center">
+            <video id="camera-feed" class="w-full rounded-lg" autoplay playsinline></video>
+            <canvas id="capture-canvas" class="hidden"></canvas>
+            <div class="flex justify-center gap-4 mt-4">
+                <button id="capture-btn" class="action-button px-8">Capture</button>
+                <button id="cancel-camera-btn" class="action-button bg-red-500 hover:bg-red-600">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="message-box" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transition-opacity duration-300"></div>
+
+    <script>
+        // All script logic is wrapped in an async IIFE to allow top-level await
+        (async () => {
+            // Configure PDF.js worker
+            pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js`;
+            const { jsPDF } = window.jspdf;
+            
+            // DOM Element References
+            const uploadPanel = document.getElementById('upload-panel');
+            const fileUpload = document.getElementById('file-upload');
+            const imagePreview = document.getElementById('image-preview');
+            const pdfPreview = document.getElementById('pdf-preview');
+            const uploadTextContainer = document.getElementById('upload-text-container');
+            const ocrTextArea = document.getElementById('ocr-text-area');
+            const aiPromptArea = document.getElementById('ai-prompt-area');
+            const aiPromptEnterBtn = document.getElementById('ai-prompt-enter-btn');
+            const extractBtn = document.getElementById('extract-btn');
+            const aiToolsBtn = document.getElementById('ai-tools-btn');
+            const aiToolsDropdown = document.getElementById('ai-tools-dropdown');
+            const copyBtn = document.getElementById('copy-btn');
+            const exportBtn = document.getElementById('export-btn');
+            const messageBox = document.getElementById('message-box');
+            const exportModal = document.getElementById('export-modal');
+            const exportPdfBtn = document.getElementById('export-pdf-btn');
+            const exportDocBtn = document.getElementById('export-doc-btn');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const loadingBar = document.getElementById('loading-bar');
+            const loadingText = document.getElementById('loading-text');
+            const loadingPercentage = document.getElementById('loading-percentage');
+            const progressCircle = document.querySelector('.progress-ring__circle');
+            const radius = progressCircle.r.baseVal.value;
+            const circumference = radius * 2 * Math.PI;
+            progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+            progressCircle.style.strokeDashoffset = circumference;
+            const cameraBtn = document.getElementById('camera-btn');
+            const cameraModal = document.getElementById('camera-modal');
+            const cameraFeed = document.getElementById('camera-feed');
+            const captureCanvas = document.getElementById('capture-canvas');
+            const captureBtn = document.getElementById('capture-btn');
+            const cancelCameraBtn = document.getElementById('cancel-camera-btn');
+            const undoBtn = document.getElementById('undo-btn');
+            const redoBtn = document.getElementById('redo-btn');
+
+            let currentFile = null;
+            let progressInterval = null;
+            let currentProgress = 0;
+            let cameraStream = null;
+            let history = [''];
+            let historyIndex = 0;
+            let isUndoingRedoing = false;
+
+            // --- Gemini API Call ---
+            async function callGeminiApi(prompt, base64ImageData = null, mimeType = null) {
+                const apiKey = ""; // Leave empty, handled by the environment
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                
+                const parts = [{ text: prompt }];
+                if (base64ImageData && mimeType) {
+                    parts.push({
+                        inlineData: {
+                            mimeType: mimeType,
+                            data: base64ImageData
+                        }
+                    });
+                }
+
+                const payload = { contents: [{ parts }] };
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        return result.candidates[0].content.parts[0].text;
+                    } else {
+                        throw new Error("No text found in the API response.");
+                    }
+                } catch (error) {
+                    console.error("Gemini API Error:", error);
+                    throw error; // Re-throw to be caught by the caller
+                }
+            }
+
+            // --- File Handling & Processing ---
+            async function handleFile(file) {
+                currentFile = file;
+                uploadTextContainer.classList.add('hidden');
+                imagePreview.classList.add('hidden');
+                pdfPreview.classList.add('hidden');
+
+                if (file.type.startsWith('image/')) {
+                    imagePreview.src = URL.createObjectURL(file);
+                    imagePreview.classList.remove('hidden');
+                } else if (file.type === 'application/pdf') {
+                    pdfPreview.classList.remove('hidden');
+                    try {
+                        const fileBuffer = await file.arrayBuffer();
+                        const pdf = await pdfjsLib.getDocument(fileBuffer).promise;
+                        const page = await pdf.getPage(1);
+                        const viewport = page.getViewport({ scale: 1.5 });
+                        const context = pdfPreview.getContext('2d');
+                        pdfPreview.height = viewport.height;
+                        pdfPreview.width = viewport.width;
+                        await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    } catch (error) {
+                        console.error("PDF Preview Error:", error);
+                        showMessage('Could not display PDF preview.', 'error');
+                    }
+                } else {
+                    showMessage('Unsupported file type. Please upload an image or PDF.', 'error');
+                    uploadTextContainer.classList.remove('hidden');
+                    currentFile = null;
+                }
+            }
+
+            function fileToBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = error => reject(error);
+                });
+            }
+
+            // --- Main Extraction Logic ---
+            extractBtn.addEventListener('click', async () => {
+                if (!currentFile) {
+                    showMessage('Please upload a file first.', 'error');
+                    return;
+                }
+
+                setLoading(true, 'Preparing file...', 0);
+                updateTextAndHistory('');
+
+                try {
+                    const userPrompt = aiPromptArea.value.trim();
+                    let ocrPrompt = "Extract all text from this document. Provide only the text content.";
+                    if (userPrompt) {
+                        ocrPrompt = `User instruction: "${userPrompt}". Apply this instruction while extracting text from the following document. Provide only the resulting text.`;
+                    }
+
+                    if (currentFile.type.startsWith('image/')) {
+                        const base64Data = await fileToBase64(currentFile);
+                        await animateProgress(95, 2000);
+                        setLoading(true, 'Processing Image...');
+                        const text = await callGeminiApi(ocrPrompt, base64Data, currentFile.type);
+                        updateTextAndHistory(text);
+                        await animateProgress(100, 200);
+                        setLoading(true, 'Complete');
+                        setTimeout(() => showMessage('Image processing complete!', 'success'), 200);
+                    } else if (currentFile.type === 'application/pdf') {
+                        const fileBuffer = await currentFile.arrayBuffer();
+                        const pdf = await pdfjsLib.getDocument(fileBuffer).promise;
+                        let fullText = '';
+
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const targetProgress = Math.round((i / pdf.numPages) * 100);
+                            setLoading(true, `Processing Page ${i} of ${pdf.numPages}...`);
+                            await animateProgress(targetProgress, 500);
+                            
+                            const page = await pdf.getPage(i);
+                            const viewport = page.getViewport({ scale: 2.0 });
+                            const canvas = document.createElement('canvas');
+                            const context = canvas.getContext('2d');
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+                            await page.render({ canvasContext: context, viewport: viewport }).promise;
+                            
+                            const base64Data = canvas.toDataURL('image/jpeg').split(',')[1];
+                            const text = await callGeminiApi(ocrPrompt, base64Data, 'image/jpeg');
+                            
+                            fullText += text + `\n\n--- Page ${i} ---\n\n`;
+                            updateTextAndHistory(fullText, true); // Update without creating excessive history entries
+                        }
+                        showMessage('PDF processing complete!', 'success');
+                    }
+                } catch (error) {
+                    showMessage('An error occurred during text extraction.', 'error');
+                } finally {
+                    setTimeout(() => setLoading(false), 500);
+                }
+            });
+
+            // --- AI Feature Logic ---
+            async function performTextTransformation(action) {
+                const currentText = ocrTextArea.value;
+                if (!currentText.trim()) {
+                    showMessage(`There is no text to ${action}.`, 'error');
+                    return;
+                }
+
+                setLoading(true, `AI ${action} in progress...`, 0);
+                try {
+                    let prompt;
+                    const userPrompt = aiPromptArea.value.trim();
+                    
+                    switch(action) {
+                        case 'cleanup':
+                            prompt = userPrompt || `Please clean the following text. Remove any OCR errors, stray symbols, or formatting artifacts. Make the text clean and readable.`;
+                            break;
+                        case 'summarize':
+                            prompt = userPrompt || `Summarize the following text concisely.`;
+                            break;
+                        case 'translate':
+                            prompt = `Detect the language of the following text. If it is English, translate it to Bengali. If it is Bengali, translate it to English. If it is neither, translate it to English.`;
+                            if (userPrompt) {
+                                prompt += ` Also, apply this user instruction to the translation: "${userPrompt}"`;
+                            }
+                            break;
+                    }
+                    
+                    const fullPrompt = `${prompt}. Just return the modified text, nothing else:\n\n"${currentText}"`;
+                    await animateProgress(95, 1500);
+                    const transformedText = await callGeminiApi(fullPrompt);
+                    updateTextAndHistory(transformedText);
+                    await animateProgress(100, 200);
+                    setLoading(true, 'Complete');
+                     setTimeout(() => showMessage(`${action.charAt(0).toUpperCase() + action.slice(1)} complete!`, 'success'), 200);
+                } catch (error) {
+                    showMessage(`AI ${action} failed.`, 'error');
+                } finally {
+                     setTimeout(() => setLoading(false), 500);
+                }
+            }
+
+            // --- Dropdown Logic ---
+            aiToolsBtn.addEventListener('click', () => {
+                aiToolsDropdown.classList.toggle('hidden');
+            });
+
+            aiToolsDropdown.addEventListener('click', (e) => {
+                if (e.target.tagName === 'A') {
+                    const action = e.target.dataset.action;
+                    performTextTransformation(action);
+                    aiToolsDropdown.classList.add('hidden');
+                }
+            });
+
+            // Close dropdown if clicked outside
+            document.addEventListener('click', (e) => {
+                if (!aiToolsBtn.contains(e.target) && !aiToolsDropdown.contains(e.target)) {
+                    aiToolsDropdown.classList.add('hidden');
+                }
+            });
+
+
+            // --- Export Logic ---
+            exportBtn.addEventListener('click', () => {
+                if (!ocrTextArea.value.trim()) {
+                    showMessage('Nothing to export!', 'error');
+                    return;
+                }
+                exportModal.classList.remove('hidden');
+            });
+
+            closeModalBtn.addEventListener('click', () => {
+                exportModal.classList.add('hidden');
+            });
+
+            exportPdfBtn.addEventListener('click', () => {
+                const doc = new jsPDF();
+                const text = ocrTextArea.value;
+                const margin = 10;
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const usableWidth = pageWidth - margin * 2;
+                
+                const lines = doc.splitTextToSize(text, usableWidth);
+                
+                let cursorY = margin;
+                
+                lines.forEach(line => {
+                    if (cursorY + 10 > pageHeight - margin) { // Check if new page is needed
+                        doc.addPage();
+                        cursorY = margin;
+                    }
+                    doc.text(line, margin, cursorY);
+                    cursorY += 7; // Move cursor down for next line
+                });
+                
+                doc.save('exported-document.pdf');
+                exportModal.classList.add('hidden');
+            });
+
+            exportDocBtn.addEventListener('click', async () => {
+                const textContent = ocrTextArea.value;
+                const htmlString = `<!DOCTYPE html>
+                    <html lang="en">
+                    <head><meta charset="UTF-8"><title>Document</title></head>
+                    <body><p>${textContent.replace(/\n/g, '</p><p>')}</p></body>
+                    </html>`;
+
+                try {
+                    if (!window.htmlToDocx) {
+                        showMessage('DOCX export library not loaded.', 'error');
+                        return;
+                    }
+                    const fileBuffer = await window.htmlToDocx.asBlob(htmlString);
+                    
+                    const url = URL.createObjectURL(fileBuffer);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'exported-document.docx';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } catch(e) {
+                    console.error("DOCX Export Error:", e);
+                    showMessage('Failed to create DOCX file.', 'error');
+                }
+                exportModal.classList.add('hidden');
+            });
+
+
+            // --- UI Utility Functions ---
+            function setLoading(isLoading, message = '', percentage) {
+                if (isLoading) {
+                    loadingBar.classList.remove('hidden');
+                    loadingText.textContent = message;
+                    if (percentage !== undefined) {
+                        setProgress(percentage);
+                    }
+                } else {
+                    loadingBar.classList.add('hidden');
+                    currentProgress = 0; // Reset progress
+                    setProgress(0);
+                }
+                
+                extractBtn.disabled = isLoading;
+                aiToolsBtn.disabled = isLoading;
+            }
+            
+            function setProgress(percent) {
+                const offset = circumference - percent / 100 * circumference;
+                progressCircle.style.strokeDashoffset = offset;
+                loadingPercentage.textContent = `${Math.round(percent)}%`;
+                currentProgress = percent;
+            }
+            
+            function animateProgress(target, duration) {
+                return new Promise(resolve => {
+                    clearInterval(progressInterval);
+                    const start = currentProgress;
+                    const stepTime = 20; // update every 20ms
+                    const steps = duration / stepTime;
+                    const increment = (target - start) / steps;
+                    let currentStep = 0;
+
+                    progressInterval = setInterval(() => {
+                        currentStep++;
+                        const newProgress = start + (increment * currentStep);
+                        if (currentStep >= steps) {
+                            setProgress(target);
+                            clearInterval(progressInterval);
+                            resolve();
+                        } else {
+                            setProgress(newProgress);
+                        }
+                    }, stepTime);
+                });
+            }
+
+            function showMessage(text, type = 'success') {
+                messageBox.textContent = text;
+                messageBox.classList.toggle('bg-red-500', type === 'error');
+                messageBox.classList.toggle('bg-green-500', type === 'success');
+                messageBox.classList.remove('opacity-0');
+                setTimeout(() => messageBox.classList.add('opacity-0'), 3000);
+            }
+
+            // --- Camera Logic ---
+            async function startCamera() {
+                try {
+                    cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    cameraFeed.srcObject = cameraStream;
+                    cameraModal.classList.remove('hidden');
+                } catch (err) {
+                    console.error("Camera Error:", err);
+                    showMessage("Could not access the camera. Please check permissions.", "error");
+                }
+            }
+
+            function stopCamera() {
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                }
+                cameraModal.classList.add('hidden');
+            }
+            
+            // --- Undo/Redo Logic ---
+            function updateUndoRedoButtons() {
+                undoBtn.disabled = historyIndex <= 0;
+                redoBtn.disabled = historyIndex >= history.length - 1;
+            }
+
+            function updateTextAndHistory(newText, isIntermediate = false) {
+                isUndoingRedoing = true; // Prevent input listener from firing
+                ocrTextArea.value = newText;
+                
+                if (!isIntermediate) {
+                    // If this is a final change, create a new history entry
+                    if (historyIndex < history.length - 1) {
+                        history = history.slice(0, historyIndex + 1);
+                    }
+                    history.push(newText);
+                    historyIndex++;
+                } else {
+                    // If this is an intermediate change (like multi-page PDF), just update the latest entry
+                     history[historyIndex] = newText;
+                }
+
+                updateUndoRedoButtons();
+                setTimeout(() => isUndoingRedoing = false, 50); // Release the lock
+            }
+
+            ocrTextArea.addEventListener('input', () => {
+                if (isUndoingRedoing) return;
+                updateTextAndHistory(ocrTextArea.value);
+            });
+
+            undoBtn.addEventListener('click', () => {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    isUndoingRedoing = true;
+                    ocrTextArea.value = history[historyIndex];
+                    updateUndoRedoButtons();
+                    setTimeout(() => isUndoingRedoing = false, 50);
+                }
+            });
+
+            redoBtn.addEventListener('click', () => {
+                if (historyIndex < history.length - 1) {
+                    historyIndex++;
+                    isUndoingRedoing = true;
+                    ocrTextArea.value = history[historyIndex];
+                    updateUndoRedoButtons();
+                     setTimeout(() => isUndoingRedoing = false, 50);
+                }
+            });
+
+            // --- Event Listeners ---
+            uploadPanel.addEventListener('click', () => fileUpload.click());
+            fileUpload.addEventListener('change', (e) => e.target.files[0] && handleFile(e.target.files[0]));
+            uploadPanel.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadPanel.classList.add('border-purple-400', 'bg-gray-50');
+            });
+            uploadPanel.addEventListener('dragleave', () => uploadPanel.classList.remove('border-purple-400', 'bg-gray-50'));
+            uploadPanel.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadPanel.classList.remove('border-purple-400', 'bg-gray-50');
+                e.dataTransfer.files[0] && handleFile(e.dataTransfer.files[0]);
+            });
+
+            aiPromptEnterBtn.addEventListener('click', () => {
+                extractBtn.click();
+            });
+            
+            cameraBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent the panel's click event
+                startCamera();
+            });
+
+            cancelCameraBtn.addEventListener('click', stopCamera);
+
+            captureBtn.addEventListener('click', () => {
+                const context = captureCanvas.getContext('2d');
+                captureCanvas.width = cameraFeed.videoWidth;
+                captureCanvas.height = cameraFeed.videoHeight;
+                context.drawImage(cameraFeed, 0, 0, cameraFeed.videoWidth, cameraFeed.videoHeight);
+                
+                captureCanvas.toBlob((blob) => {
+                    const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+                    handleFile(file);
+                }, 'image/jpeg');
+
+                stopCamera();
+            });
+
+            copyBtn.addEventListener('click', () => {
+                const textToCopy = ocrTextArea.value;
+                if (!textToCopy) {
+                    showMessage('Nothing to copy!', 'error');
+                    return;
+                }
+
+                // Modern clipboard API as the first choice
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        showMessage('Text copied to clipboard!');
+                    }).catch(err => {
+                        console.error('Async: Could not copy text: ', err);
+                        fallbackCopyTextToClipboard(textToCopy); // Fallback if it fails
+                    });
+                } else {
+                    // Fallback for older browsers
+                    fallbackCopyTextToClipboard(textToCopy);
+                }
+            });
+
+            function fallbackCopyTextToClipboard(text) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                
+                // Avoid scrolling to bottom
+                textArea.style.top = "0";
+                textArea.style.left = "0";
+                textArea.style.position = "fixed";
+
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        showMessage('Text copied to clipboard!');
+                    } else {
+                        showMessage('Failed to copy text.', 'error');
+                    }
+                } catch (err) {
+                    console.error('Fallback: Oops, unable to copy', err);
+                    showMessage('Failed to copy text.', 'error');
+                }
+
+                document.body.removeChild(textArea);
+            }
+            
+            // Initial state
+            updateUndoRedoButtons();
+        })(); // End of async IIFE
+    </script>
+</body>
+</html>
