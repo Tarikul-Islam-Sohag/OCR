@@ -22,6 +22,12 @@
             overflow-y: auto;
         }
 
+        /* Maintenance Banner Style */
+        .maintenance-banner {
+             background: linear-gradient(145deg, rgba(255, 193, 7, 0.2), rgba(255, 167, 38, 0.1));
+             border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
         /* Main container with gradient for the hero section */
         .hero-panel {
             background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
@@ -68,7 +74,8 @@
 
     <!-- Main Content Wrapper -->
     <div class="w-full max-w-5xl mx-auto">
- <!-- Maintenance Countdown Section -->
+
+        <!-- Maintenance Countdown Section -->
         <div id="maintenance-section" class="maintenance-banner w-full rounded-2xl p-4 sm:p-6 text-center mb-8">
             <h2 class="text-2xl font-bold text-yellow-300">Scheduled Maintenance</h2>
             <p class="text-yellow-200 mt-1">The app will be temporarily unavailable. Service will resume in:</p>
@@ -91,7 +98,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Hero Section -->
         <div class="hero-panel w-full rounded-3xl p-8 sm:p-12 text-center">
             <h1 class="text-5xl md:text-7xl font-extrabold text-white tracking-wider">OCR <span style="color: #a78bfa;">HYDRA</span></h1>
@@ -100,7 +107,7 @@
             </p>
             <div class="mt-10">
                 <a href="./app.html" class="action-button">
-                    Launch OCR
+                    Launch App
                 </a>
             </div>
         </div>
@@ -140,10 +147,52 @@
 
         <!-- Footer -->
         <footer class="text-center mt-12 py-4">
-            <p class="text-gray-500">&copy; 2025 OCR HYDRA. All rights reserved.</p>
+            <p class="text-gray-500">&copy; 2024 OCR HYDRA. All rights reserved.</p>
         </footer>
 
     </div>
+
+    <script>
+        // Set the date we're counting down to (24 hours from now)
+        const countDownDate = new Date();
+        countDownDate.setHours(countDownDate.getHours() + 24);
+
+        // Get elements
+        const daysEl = document.getElementById('days');
+        const hoursEl = document.getElementById('hours');
+        const minutesEl = document.getElementById('minutes');
+        const secondsEl = document.getElementById('seconds');
+        const maintenanceSection = document.getElementById('maintenance-section');
+        const countdownEl = document.getElementById('countdown');
+
+        // Update the count down every 1 second
+        const x = setInterval(function() {
+
+            // Get today's date and time
+            const now = new Date().getTime();
+
+            // Find the distance between now and the count down date
+            const distance = countDownDate - now;
+
+            // Time calculations for days, hours, minutes and seconds
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            // Display the result in the elements
+            daysEl.innerHTML = String(days).padStart(2, '0');
+            hoursEl.innerHTML = String(hours).padStart(2, '0');
+            minutesEl.innerHTML = String(minutes).padStart(2, '0');
+            secondsEl.innerHTML = String(seconds).padStart(2, '0');
+
+            // If the count down is finished, write some text 
+            if (distance < 0) {
+                clearInterval(x);
+                maintenanceSection.innerHTML = '<h2 class="text-2xl font-bold text-green-300">Maintenance Complete</h2><p class="text-green-200 mt-1">Services have been restored. Thank you for your patience.</p>';
+            }
+        }, 1000);
+    </script>
 
 </body>
 </html>
