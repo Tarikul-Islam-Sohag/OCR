@@ -268,7 +268,7 @@
 
             // --- Gemini API Call ---
             async function callGeminiApi(prompt, base64ImageData = null, mimeType = null) {
-                const apiKey = ""; // Leave empty, handled by the environment
+                const apiKey = "AIzaSyCmje3P-kGPwqE5hENYujKLKjIievNvmvM"; // <-- Your API key is here
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
                 
                 const parts = [{ text: prompt }];
