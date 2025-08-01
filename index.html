@@ -68,7 +68,30 @@
 
     <!-- Main Content Wrapper -->
     <div class="w-full max-w-5xl mx-auto">
-
+ <!-- Maintenance Countdown Section -->
+        <div id="maintenance-section" class="maintenance-banner w-full rounded-2xl p-4 sm:p-6 text-center mb-8">
+            <h2 class="text-2xl font-bold text-yellow-300">Scheduled Maintenance</h2>
+            <p class="text-yellow-200 mt-1">The app will be temporarily unavailable. Service will resume in:</p>
+            <div id="countdown" class="flex justify-center items-center space-x-4 md:space-x-8 mt-4 text-white">
+                <div>
+                    <span id="days" class="text-4xl md:text-5xl font-bold">00</span>
+                    <span class="block text-xs text-yellow-200">Days</span>
+                </div>
+                <div>
+                    <span id="hours" class="text-4xl md:text-5xl font-bold">00</span>
+                    <span class="block text-xs text-yellow-200">Hours</span>
+                </div>
+                <div>
+                    <span id="minutes" class="text-4xl md:text-5xl font-bold">00</span>
+                    <span class="block text-xs text-yellow-200">Minutes</span>
+                </div>
+                <div>
+                    <span id="seconds" class="text-4xl md:text-5xl font-bold">00</span>
+                    <span class="block text-xs text-yellow-200">Seconds</span>
+                </div>
+            </div>
+        </div>
+        
         <!-- Hero Section -->
         <div class="hero-panel w-full rounded-3xl p-8 sm:p-12 text-center">
             <h1 class="text-5xl md:text-7xl font-extrabold text-white tracking-wider">OCR <span style="color: #a78bfa;">HYDRA</span></h1>
